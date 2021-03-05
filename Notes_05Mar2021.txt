@@ -1,0 +1,674 @@
+SQL
+	DML		INSERT UPDATE DELETE MERGE
+	DQL		SELECT
+	DDL		CREATE ALTER DROP TRUNCATE
+	DCL		GRANT	REVOKE
+	TCL		COMMIT	ROLLBACK	SAVEPOINT
+
+Every DML statement itself executes in an implicit transaction (we dont have control on the beginning or end of transaction. 
+We can commit or rollback only DML statement. 
+We cannot rollback a DDL operation. ex: I dropped a table by mistake. Can we rollback? NO
+	We can flashback the dropped table.	(we learn flashback in PLSQL)
+
+Save point is possible in explicit transactions.	we specify when the transaction begin and end. In between, we can set lot of save points so that we rollback upto specific savepoint.
+
+GRANT is used to give privileges to a user or role
+	
+Ex:	Jag is a user.
+	GRANT CREATE SESSION to Jag;		//this wil enable Jag to login to oracle.	
+	GRANT SELECT ON EMPLOYEES to Jag;	//this will allow Jag to execute SELECT Queries on EMPLOYEES table
+
+	the above 1st statement is an example for SYSTEM PRIVILEGE
+	the above second statement is an example for OBJECT PRIVILEGE
+
+	GRANT CREATE TABLE to Jag;		//allows Jag to create tables	(System)
+	GRANT UPDATE TABLE to Jag;
+
+	GRANT INSERT ON EMPLOYEES to Jag WITH GRANT OPTION;	//jag can insert into employees table. Also, Jag can grant this permission to other users.
+
+	GRANT DELETE TABLE to Jag WITH ADMIN OPTION;		//jag can delete a table. Also, Jag can grant this permission to other users.
+
+	Notice, when it is an object privilege, "WITH GRANT OPTION". 
+		When it is a system privilege, "WITH ADMIN OPTION".
+
+scenario 1:
+	sys is an admin.
+	sys grants an system privilege "with admin option" to user "A".
+		Now A grants the same privilege to "B".
+
+	Now sys revokes that privilege from "A".	What happens to "B"?
+
+Ans:
+	Only A loses the revoked system privilege.	B will continue to execute the system command
+
+scenario 2:
+	sys is an admin.
+	sys grants an object privilege "with grant option" to user "A".
+		Now A grants the same privilege to "B".
+
+	Now sys revokes that privilege from "A".	What happens to "B"?
+
+Ans:
+	The revoke from A, will cause, a cascade revoke from B also. If B has given the same to C, then C also looses the privilege.
+
+usually, when a privilege is revoked from A, it should cause cascade effect. THat is normal. But in case of Admin option ie., system privileges, take an example of 
+	A has resigned from our company. He should not be able to login. Login is allowed by "CREATE SESSION" system privilege.
+	If I revoke from A, only A should not be able to login. But others have not resigned. So they should continue to login.
+	
+
+
+	TRUNCATE	what is truncate?
+		TRUNCATE is used to remove all records from the table.
+
+	How does this TRUNCATE differs from DELETE statement?
+	i) We can give conditions while using "DELETE" statement. 
+		but there is no condition for "TRUNCATE" statement.
+	ii) DELETE can delete records based on condition
+		TRUNCATE deletes all records 
+	iii) TRUNCATE is like DROP and CREATE table	(DDL)
+		DELETE is a DML. So DELETE can be Rolled Back. 
+		TRUNCATE cannot be Rolled Back.
+	iv) TRUNCATE is very fast.
+	v) TRIGGERs may be fired when DELETE statement is executed.
+		TRUNCATE will  not cause the triggers to fire at all. Because, it is not DELETE statement
+
+
+
+Do you remember,
+	we created EmployeeDao class
+	
+	create()
+		INSERT
+	read()
+		SELECT
+	read(id)
+		SELECT WHERE
+	update()
+		UPDATE
+	delete()
+		DELETE
+
+Now you understand why we always use single quote '	in SQL statements
+	we will embed sql statements inside double " 	in java
+=====================================
+PL/SQL		-		Procedural Language Extension to SQL
+
+	SQL + procedural capabilities
+	what are the procedural capabilities we mean?
+
+	declaring variables
+	conditional constructs
+	loops
+	functions or procedures
+	packages
+	user defined types
+
+SQL statements are sent from client to server
+	i)sending 2 sql statements
+	ii)send 1 request to execute a function that do 2 statements
+
+	in second method, n/w traffic is reduced
+
+1998
+	Oracle 8
+	Oracle 8i
+there were 20 computers in our lab.
+	in Oracle 8,
+	we installed oracle server in 1 computer.	(server)	DB is present here
+	we installed oracle navigator in all computers.	(client)
+	all computers were connected to LAN
+
+	some times, we get issues like in Computer #3, oracle navigator is not found. So we couldnt practise oracle sql statements there. 
+	we have to install. 
+
+Now, we got Oracle 8i:
+	what is i?????	internet
+
+	we installed oracle server in 1 computer.	(server)
+	in all other computers, we did not install client s/w.
+		we used browser to connect to server. 	isql
+
+	Oracle 9i	introduced web application called Application Express	(apex)
+	to control all operations of oracle using web browser
+
+-------------------------------
+Oracle DBA	(Database Administrator)
+	who are dba
+	whenever we install oracle server, there are some users already created.
+	ex:
+		sys
+		system
+		scott
+		hr
+
+	these users are created while installing oracle server
+
+	sys is the system dba
+	system is the system operator
+
+	sysdba, sysoper		are the roles
+
+	sys and system can change the password of any user, even without knowing the current password.
+
+	they can create users, they can grant any privileges to the users.
+	there are 100s of privileges. even more than that.
+	so it is difficult to grant each and every privilege to every users working in an organisation.
+
+	suppose there are 100 privileges. 	There are 100 users.
+	so if we apply 100 privilge for 1 user. then for 100 users, it is 100 * 100 statements. =10000 statements.
+
+	But, we can create 1 role and apply 100 privileges to the role.
+	now, apply that 1 role to 100 users.	so it is 100 + 100 statements	=200 statements.
+
+	that is why roles are introduced.	Using roles is also quite natural as user.
+
+	Ex:
+		GRANT CREATE SESSION TO supervisor;		--here, supervisor is a role. (same syntax as user)
+		GRANT supervisor to jag;			--here, the role is applied to user.
+
+	all the privileges applied to the role. are now applied to the user.
+
+	we can create a role. grant some privileges to the role.
+
+	When an employee joins the organisation, we assign some roles to the employee.
+	The same way, we grant some roles to the user in db.
+
+------------------
+What is an oracle enterprise manager.
+	This is server sw that is installed in 1 computer.
+	The em is used to manager the "Oracle Instance".
+	What is oracle instance?
+		There is a software called Oracle. The running instance is called as "Oracle Instance".
+	There are 2 important operations, "system" user will perform.
+	1) Start up
+	2) Shut down
+
+	There are some admin operations that we cannot perform when the oracle instance is running.
+	i) updating the sp file
+	ii) listener file	(listener is used to allow clients to connect with server)
+
+	we shut down oracle instance and start it to various state.
+	various states of start up:
+		i) closed	(offline restore) 	files are not allowed to replace while instance is up.
+		ii) no mount	(change the init file, param file configurations)
+		iii) mount	(users cannot connect. but instance is loaded in memory)	backup
+		iv) open	(allows clients to connect)		final state
+	
+	various options of shutdown:
+		i) normal	(no new connections allowed. connected users should logout. will wait)
+		ii) immediate	(will not wait for users to log out. it will not wait for transactions to commit. but it will rollback)
+		iii) TRANSACTIONAL waits for all uncommitted transactions to complete before shutting down the 			database instance.	
+		iii) abort	(no time given for running transactions to commit) fastest. Needs instance recovery on next start up
+
+		
+Oracle Memory structures
+	System Global Area
+		Background processes
+			DBWR	Database Writer is responsible for storing data in the db
+			LGWR	every statement creates an entry in Log files
+			SMON
+			PMON
+			RECO
+			ARCH
+	Program Global Area
+	
+
+File system
+	data file		original data
+	redo log files		log entries
+	control file		configuration file
+
+what are log entries?
+	whenever we do manipulation, an entry is made in the log file. 
+	if we issue rollback, the log entry is used to find all the uncommitted changes and revoke them in the db
+
+task1 is completed
+task2 is completed
+task3 is going on, error has occurred. error will rollback. we dont initiate rollback. automatic
+task 4 not started
+task 5 not started
+
+now, we need to rollback task3, task2 and task1 
+
+Log entry helped us to rollback.
+
+DBCA	-	Oracle Database Configuration Assistant
+	used to create database
+
+Tablespace
+	physical structure for tables
+
+every table (logical) is created in a file called tablespace
+	IN SQL STATEMENTS
+	CREATE TABLESPACE jagts;
+
+A tablepace is the point where physical location where tables will be stored is decided.
+
+while taking backup, we copy the files. so in which file, a particular table is store?
+	we create tablespace that represent a physical location. And that tablespace is 
+	specified while creating table.
+
+-----------------------------
+PLSQL		-	Procedural Language Extension to SQL
+			----------------------------------------
+PROCEDURAL capabilities
+	declare variables
+	conditional constructs
+	loops
+	functions or procedures
+	packages
+	user defined types
+
+1) hello world program in PL/SQL
+	System.out.println("hello world");
+
+
+
+PLSQL PROGRAMS are written inside
+	BEGIN
+		DBMS_OUTPUT.PUT_LINE('HELLO WORLD');
+	END;			
+
+IN SQL DEVELOPER, the variable "SERVEROUTPUT" is set to OFF by default
+you need to set it to ON
+	SET SERVEROUTPUT ON;
+
+let us understand the PLSQL program structure:
+	DECLARE		--optional	used to declare variables
+	BEGIN		--mandatory	write procedural statements here
+	EXCEPTION	--optional	used to handle exceptions
+	END;		--mandatory	used to end the program
+
+
+A program created using these blocks are called as PLSQL program or ANONYMOUS blocks
+
+an anonymous program is executed to do some task or produce output. But this program
+	is noted stored in the database
+
+
+
+1) operators
+	:=		assign
+	=		compare equality
+	||		concatenate characters
+
+BEGIN
+	SELECT * FROM EMPLOYEES;
+END;
+
+	YOU WILL GET ERROR
+	In plsql, a select statement must contain INTO
+
+BEGIN
+	SELECT COL1 INTO X FROM EMPLOYEES WHERE CONDITION;
+END;
+
+
+
+
+DECLARE
+    SAL INT;
+BEGIN
+	SELECT SALARY INTO SAL FROM EMPLOYEES WHERE EMPLOYEE_ID=101;
+    DBMS_OUTPUT.PUT_LINE(SAL);
+END;
+
+Look at the above code. If there is no WHERE condition, then the query would have returned 
+	more than one row. 
+We cannot store more than one row in the scalar variable. 
+
+
+DECLARE
+    SAL INT;
+    FNAME varchar2(50);
+BEGIN
+	SELECT FIRST_NAME, SALARY INTO FNAME, SAL FROM EMPLOYEES WHERE EMPLOYEE_ID=101;
+    DBMS_OUTPUT.PUT_LINE('The salary of '||FNAME||' is '||SAL);
+END;
+------------
+
+DECLARE
+    EID INT:=111;
+    SAL INT;
+    FNAME varchar2(50);
+BEGIN
+	SELECT FIRST_NAME, SALARY INTO FNAME, SAL FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+    DBMS_OUTPUT.PUT_LINE('The salary of '||FNAME||' is '||SAL);
+END;
+
+-----------
+Task:
+	create a plsql program to display the employee id, first name and department name
+	Note:
+		find the department id of employee 103 and store it in a variable
+		find the department name for that department id
+		display the employee id, first name and department name of 103
+		DO NOT USE JOIN
+
+Solution:
+
+DECLARE
+    EID INT:=100;
+    FNAME VARCHAR2(50);
+    DNAME VARCHAR2(50);
+    DID INT;
+BEGIN
+    SELECT DEPARTMENT_ID, FIRST_NAME INTO DID, FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+    SELECT DEPARTMENT_NAME INTO DNAME FROM DEPARTMENTS WHERE DEPARTMENT_ID=DID;
+    DBMS_OUTPUT.PUT_LINE(EID||' '||FNAME||' '||DNAME);
+END;
+
+----------------instead of data types, we can refer to the table.column%type
+
+DECLARE
+    EID employees.employee_id%type:=100;
+    FNAME employees.first_name%type;
+    DNAME departments.department_name%type;
+    DID INT;
+BEGIN
+    SELECT DEPARTMENT_ID, FIRST_NAME INTO DID, FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+    SELECT DEPARTMENT_NAME INTO DNAME FROM DEPARTMENTS WHERE DEPARTMENT_ID=DID;
+    DBMS_OUTPUT.PUT_LINE(EID||' '||FNAME||' '||DNAME);
+END;
+
+
+--------------------------
+
+TasK:
+	obtain all the columns from employees table for employee id 103.
+	Display any 3 columns
+
+DECLARE
+    X HR.EMPLOYEES%ROWTYPE;
+BEGIN
+    SELECT * INTO X
+        FROM HR.EMPLOYEES
+        WHERE EMPLOYEE_ID=103;
+    DBMS_OUTPUT.PUT_LINE(X.FIRST_NAME);
+    DBMS_OUTPUT.PUT_LINE(X.SALARY);
+    DBMS_OUTPUT.PUT_LINE(X.JOB_ID);
+END;
+
+-----------------------
+
+cOMMENTS:
+	--		For single line comment
+	/*		multi line comment		*/
+
+Blocks in java:	
+	{
+		{
+			//nested block
+		}
+	}
+
+in PLSQL:
+	BEGIN
+		BEGIN
+			//nested block
+		END;
+	END;
+
+
+if we need to group multiple lines, we use BLOCK
+
+if:
+----
+	how to write IF conditions in PLSQL?
+	
+ex:
+	find the salary of employee 103
+	if salary is greater than 10k, display "GOOD"
+	else
+	display "BAD"
+
+DECLARE
+    EID INT:=103;
+    SAL INT;
+BEGIN
+    SELECT SALARY INTO SAL FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+    IF SAL>10000 THEN
+        DBMS_OUTPUT.PUT_LINE('GOOD');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('BAD');
+    END IF;
+END;
+
+----------SAME AS-------------
+DECLARE
+    EID INT:=103;
+    SAL INT;
+BEGIN
+    SELECT SALARY INTO SAL FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+    IF SAL>10000 THEN
+        BEGIN
+            DBMS_OUTPUT.PUT_LINE('GOOD');
+        END;
+    ELSE
+        BEGIN
+            DBMS_OUTPUT.PUT_LINE('BAD');
+        END;
+    END IF;
+END;
+
+------------------------SAME AS --------------------
+DECLARE
+    EID INT:=103;
+    SAL INT;
+BEGIN
+    SELECT SALARY INTO SAL FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+    IF SAL>10000 THEN
+            DBMS_OUTPUT.PUT_LINE('GOOD');
+            DBMS_OUTPUT.PUT_LINE('V.GOOD');
+    ELSE
+            DBMS_OUTPUT.PUT_LINE('BAD');
+            DBMS_OUTPUT.PUT_LINE('V.BAD');
+    END IF;
+END;
+-----------------
+We can use logical 
+	AND
+	OR
+	NOT
+operators in IF condition
+
+we can use multiple else if conditions using
+	ELSIF		--NOTE down the spelling of Elsif
+and only one ELSE for an IF statement
+finally, there should be an 
+	END IF;
+
+Task:
+	find the salary of 100
+	if salary is between 20k and 25k, then display V.V.Good
+	else if salary between 15k and 20k then display V.Good
+	else if salary between 10k and 15k then display Good
+	else display Bad
+
+-------------------PLSQL Data types-------------------------
+Scalar types:
+	INT
+	CHAR
+	VARCHAR2
+	NUMBER
+	DATE
+	BOOLEAN		TRUE	|	FALSE	|	NULL
+Composite types:
+	x EMPLOYEES%ROWTYPE;			--LOT OF COLUMNS INSIDE X
+Reference types:
+	CURSOR
+Large Objects
+	CLOB	CHARACTER LARGE OBJECT		8 GB TO 128 TB
+	BLOB
+	BFILE
+
+
+Date:
+-------
+
+dd-MMM-yy		is the default format
+dd-MMM-RR		is the correct format
+
+	in RR, 
+		05 MEANS 2005
+		95 MEANS 1995
+
+rule:
+	from 51-99 onwards 19XX
+	00-50	is	20XX
+
+
+TasK:
+	identify date functions in oracle
+----------
+
+
+Employee class in java
+	employeeId	int			INT
+	firstName	String			VARCHAR2(50)
+	dateOfBirth	Date			DATE?	OR TIMESTAMP
+
+-------------------------
+
+case	(similar to switch case)
+In SQL, WE LEARNT case yesterday
+
+Task:
+	FIND THE GRADE BASED ON THE SALARY
+	USE:
+		EMPLOYEES.salary
+		JOB_GRADES table
+
+	columns to display:
+		EID, FNAME, SAL, GRADE
+
+NON EQUI JOIN
+----------------------
+select employee_id, first_name, salary, grade
+from employees e
+join job_grades j
+on e.salary between j.lowest_sal and j.highest_sal;
+
+----------case when then else -------------
+DECLARE
+    JOB VARCHAR2(100);
+BEGIN
+    SELECT JOB_ID INTO JOB FROM EMPLOYEES WHERE EMPLOYEE_ID=111;
+    CASE JOB
+    WHEN 'AD_PRES' THEN 
+        DBMS_OUTPUT.PUT_LINE('President');
+    WHEN 'AD_VP' THEN
+        DBMS_OUTPUT.PUT_LINE('Vice President');
+    WHEN 'IT_PROG' THEN
+        DBMS_OUTPUT.PUT_LINE('Programmer');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('New Joinee');
+    END CASE;
+END;
+
+----------------------------
+LOOPS
+------
+	Basic loop:
+		
+		DECLARE
+		    X INT;
+		BEGIN
+		    X:=1;
+		    LOOP
+		        DBMS_OUTPUT.PUT_LINE(X);
+		        X:=X+1;
+		        EXIT WHEN X>10;
+		    END LOOP;
+		END;
+
+Task:
+	Use the same code to display designation based on job_id. 
+	Display the eid, fname and designation for employee id between 100 to 120
+	Note: use loop
+
+DECLARE
+    EID INT:=100;		--DEFAULT
+    JOB VARCHAR2(100);
+    FNAME EMPLOYEES.FIRST_NAME%TYPE;
+    	X CONSTANT INT :=1;		--CONSTANT
+BEGIN
+	EID:=101;		--ASSIGNMENT
+    LOOP
+        SELECT JOB_ID, FIRST_NAME INTO JOB, FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+        CASE JOB
+            WHEN 'AD_PRES' THEN 
+                DBMS_OUTPUT.PUT_LINE(EID||','||FNAME||','||'President');
+            WHEN 'AD_VP' THEN
+                DBMS_OUTPUT.PUT_LINE(EID||','||FNAME||','||'Vice President');
+            WHEN 'IT_PROG' THEN
+                DBMS_OUTPUT.PUT_LINE(EID||','||FNAME||','||'Programmer');
+            ELSE
+                DBMS_OUTPUT.PUT_LINE(EID||','||FNAME||','||'New Joinee');
+        END CASE;
+        EID:=EID+1;
+        EXIT WHEN EID>120;
+    END LOOP;
+END;
+
+
+Activity:
+	PLS_INTEGER vs BINARY_INTEGER
+
+Activity:
+	BINARY_FLOAT vs BINARY_DOUBLE
+
+Character data types:
+	CHAR
+	NCHAR
+	LONG
+	LONG RAW
+	VARCHAR2
+	NVARCHAR2
+	CLOB
+	NCLOB
+
+Activity:
+	Date data types
+		DATE
+		TIMESTAMP
+		TIMESTAMP WITH TIME ZONE
+		TIMESTAMP WITH LOCAL TIME ZONE
+		
+Oracle Interval data types:
+-----------------------------
+CREATE TABLE candidates (
+    candidate_id NUMBER,
+    first_name VARCHAR2(50) NOT NULL,
+    last_name VARCHAR2(50) NOT NULL,
+    job_title VARCHAR2(255) NOT NULL,
+    year_of_experience INTERVAL YEAR TO MONTH,
+    PRIMARY KEY (candidate_id)
+);
+
+
+--CREATE TABLE candidates (
+--    candidate_id NUMBER,
+--    first_name VARCHAR2(50) NOT NULL,
+--    last_name VARCHAR2(50) NOT NULL,
+--    job_title VARCHAR2(255) NOT NULL,
+--    year_of_experience INTERVAL YEAR(3) TO MONTH,
+--    PRIMARY KEY (candidate_id)
+--);
+
+
+
+INSERT INTO candidates (
+    candidate_id,
+    first_name,
+    last_name,
+    job_title,
+    year_of_experience
+    )
+VALUES (
+    4,
+    'Camila',
+    'Kramer',
+    'SCM Manager',
+    INTERVAL '100-3' YEAR(3) TO MONTH
+    );
